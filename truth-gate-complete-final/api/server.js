@@ -8,18 +8,18 @@ const PORT = process.env.PORT || 10000;
 
 app.use(bodyParser.json());
 
-// ✅ Serve frontend from /public
+// ✅ Serve frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ✅ Root route → serve index.html
+// ✅ Root route serves HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// ✅ Route for Truth Gate backend
-app.post('/api/routeGPT', routeGPT);
+// ✅ Properly mount router for /api/routeGPT
+app.use('/api/routeGPT', routeGPT);
 
-// Start the server
+// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`🚪 Truth Gate listening on port ${PORT}`);
+  console.log(`🧠 Truth Gate listening on port ${PORT}`);
 });
