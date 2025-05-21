@@ -1,68 +1,42 @@
-const OpenAI = require('openai');
-const { analyzeInput } = require('../core/mirrorEngine');
-const { buildSystemPrompt } = require('../core/promptBuilder');
-const { enforceRefusalLogic } = require('../core/refusalEngine');
-const memory = require('../memory/chatHistory');
+const express = require('express');
+const router = express.Router();
+const { Configuration, OpenAIApi } = require('openai');
 
-require('dotenv').config();
+const openai = new OpenAIApi(
+  new Configuration({ apiKey: process.env.OPENAI_API_KEY })
+);
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const memory = {}; // simple in-memory store
 
-module.exports = async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const { userId, input, persona = 'Mirror' } = req.body;
+    const { userId, input, persona } = req.body;
 
-    const mirrorReport = analyzeInput(userId, input);
-
-    if (mirrorReport.vaultViolation || mirrorReport.contradictions.length) {
-      return res.json({
-        status: 'rejected',
-        reflection: mirrorReport.reflection,
-        output: null
-      });
+    if (!userId || !input) {
+      return res.status(400).json({ error: 'Missing userId or input.' });
     }
 
-    // 🧠 Load prior memory
-    const history = memory.getHistory(userId);
+    if (!memory[userId]) memory[userId] = [];
+    memory[userId].push({ role: 'user', content: input });
 
-    // 🧱 Build message array for OpenAI
-    const systemPrompt = buildSystemPrompt(userId, persona);
     const messages = [
-      { role: 'system', content: systemPrompt },
-      ...history,
-      { role: 'user', content: input }
+      { role: 'system', content: `You are a persona named ${persona}. Reply truthfully and clearly.` },
+      ...memory[userId].slice(-10)
     ];
 
-    // 🔁 Save user input
-    memory.addMessage(userId, 'user', input);
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-      temperature: 0.5
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages
     });
 
-    const assistantReply = completion.choices[0].message.content;
+    const output = completion.data.choices[0].message.content;
+    memory[userId].push({ role: 'assistant', content: output });
 
-    // 🛡️ Refusal filter
-    const filtered = enforceRefusalLogic(userId, input, assistantReply);
-
-    // 💾 Save assistant reply to memory
-    if (filtered.status === 'ok') {
-      memory.addMessage(userId, 'assistant', filtered.output);
-    }
-
-    return res.json({
-      status: filtered.status,
-      reason: filtered.reason,
-      reflection: mirrorReport.reflection,
-      output: filtered.output
-    });
-
-  } catch (error) {
-    console.error('[routeGPT ERROR]', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.json({ output, contextHistory: memory[userId].slice(-10) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong.' });
   }
-};
+});
+
+module.exports = router;
