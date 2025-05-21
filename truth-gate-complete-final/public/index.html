@@ -3,65 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Truth Gate Chat</title>
+  <title>Truth Gate</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
       background: #111;
       color: #eee;
       padding: 2rem;
-    }
-    h1 { color: #78f; }
-    .chat-box {
       max-width: 600px;
       margin: auto;
-      padding: 1rem;
-      background: #222;
-      border-radius: 8px;
     }
-    .messages {
-      white-space: pre-wrap;
-      margin-bottom: 1rem;
-      font-family: monospace;
-      background: #000;
-      padding: 1rem;
-      border-radius: 4px;
-      min-height: 120px;
-    }
+
     input, button {
       padding: 0.5rem;
       font-size: 1rem;
-      margin-right: 0.5rem;
+      width: 100%;
+      margin-top: 1rem;
+      box-sizing: border-box;
+    }
+
+    #response {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #222;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
-  <div class="chat-box">
-    <h1>Truth Gate</h1>
-    <div class="messages" id="messages">Ask me anything…</div>
-    <input type="text" id="input" placeholder="Type your question" />
-    <button onclick="send()">Send</button>
-  </div>
+  <h1>🧠 Truth Gate</h1>
+  <p>Ask your question:</p>
+  <input type="text" id="input" placeholder="What is truth?"/>
+  <button onclick="send()">Send</button>
+
+  <div id="response">Awaiting your question...</div>
 
   <script>
     async function send() {
-      const input = document.getElementById('input').value;
-      const display = document.getElementById('messages');
+      const input = document.getElementById('input').value.trim();
+      const display = document.getElementById('response');
 
-      display.textContent = '⏳ Thinking...';
+      if (!input) {
+        display.textContent = 'Please enter a question.';
+        return;
+      }
 
-      const res = await fetch('/api/routeGPT', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: "anon",
-          input,
-          persona: "Mirror"
-        })
-      });
+      display.textContent = 'Thinking...';
 
-      const data = await res.json();
-      display.textContent = data.output || '⚠️ No response.';
+      try {
+        const res = await fetch('/api/routeGPT', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: 'web-user',
+            input,
+            persona: 'Mirror'
+          })
+        });
+
+        const data = await res.json();
+        console.log('[✅ Response]', data);
+        display.textContent = data.response || '⚠️ No response.';
+      } catch (err) {
+        console.error('[❌ Error]', err);
+        display.textContent = 'Something went wrong.';
+      }
     }
   </script>
 </body>
