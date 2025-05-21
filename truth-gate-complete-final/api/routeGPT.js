@@ -1,65 +1,57 @@
 const express = require('express');
 const router = express.Router();
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
-// Initialize OpenAI client
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
-// Simple in-memory user conversation store (resets on server restart)
-const memoryStore = {};
-
-// Helper function to keep last 10 messages
-function updateMemory(userId, newMessage) {
-  if (!memoryStore[userId]) {
-    memoryStore[userId] = [];
-  }
-
-  memoryStore[userId].push(newMessage);
-
-  if (memoryStore[userId].length > 10) {
-    memoryStore[userId].shift(); // remove oldest
-  }
-}
+// Simple in-memory message history (per user)
+const userMemory = {};
 
 router.post('/', async (req, res) => {
   try {
-    const { userId, input, persona = "Mirror" } = req.body;
+    const { userId, input, persona } = req.body;
 
     if (!userId || !input) {
-      return res.status(400).json({ error: "Missing userId or input" });
+      return res.status(400).json({ error: 'Missing userId or input' });
     }
 
-    const messages = [
-      {
-        role: "system",
-        content: `You are Truth Gate. Your persona is: ${persona}. Respond concisely, intelligently, and honestly. Never pretend.`
-      },
-      ...(memoryStore[userId] || []),
-      {
-        role: "user",
-        content: input
-      }
-    ];
+    // Initialize user memory if not exists
+    if (!userMemory[userId]) {
+      userMemory[userId] = [];
+    }
 
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages
+    // Add new message to memory
+    userMemory[userId].push({ role: 'user', content: input });
+
+    // Trim history to last 10 messages max
+    if (userMemory[userId].length > 10) {
+      userMemory[userId] = userMemory[userId].slice(-10);
+    }
+
+    // Construct full prompt with persona context if provided
+    const systemPrompt = persona
+      ? { role: 'system', content: `You are acting as a persona named "${persona}". Respond with that mindset.` }
+      : { role: 'system', content: 'You are a helpful assistant.' };
+
+    const messages = [systemPrompt, ...userMemory[userId]];
+
+    // Send to OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages,
     });
 
-    const reply = response.data.choices[0].message.content;
+    const reply = completion.choices[0].message.content;
 
-    // Store user + assistant messages for memory
-    updateMemory(userId, { role: "user", content: input });
-    updateMemory(userId, { role: "assistant", content: reply });
+    // Store assistant's reply in memory too
+    userMemory[userId].push({ role: 'assistant', content: reply });
 
     res.json({ response: reply });
-
-  } catch (err) {
-    console.error("❌ routeGPT error:", err.message);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    console.error('Error in /api/routeGPT:', error);
+    res.status(500).json({ error: 'Failed to process request' });
   }
 });
 
