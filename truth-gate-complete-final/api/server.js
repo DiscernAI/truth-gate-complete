@@ -1,24 +1,25 @@
 const express = require('express');
-const cors = require('cors');
-const { handleGPTRequest } = require('./routeGPT');
-require('dotenv').config();
+const bodyParser = require('body-parser');
+const path = require('path');
+const routeGPT = require('./routeGPT');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 10000;
 
-app.post('/api/routeGPT', async (req, res) => {
-  try {
-    const { input, userId, persona } = req.body;
-    const result = await handleGPTRequest(userId, input, persona);
-    res.json(result);
-  } catch (err) {
-    console.error('Error in /api/routeGPT:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+app.use(bodyParser.json());
+
+// ✅ Serve frontend from /public
+app.use(express.static(path.join(__dirname, '../public')));
+
+// ✅ Root route → serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
+// ✅ Route for Truth Gate backend
+app.post('/api/routeGPT', routeGPT);
+
+// Start the server
 app.listen(PORT, () => {
   console.log(`🚪 Truth Gate listening on port ${PORT}`);
 });
