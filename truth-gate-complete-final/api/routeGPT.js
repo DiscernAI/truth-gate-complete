@@ -1,41 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
-const openai = new OpenAIApi(
-  new Configuration({ apiKey: process.env.OPENAI_API_KEY })
-);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-const memory = {}; // simple in-memory store
+const historyMap = new Map();
 
 router.post('/', async (req, res) => {
+  const { input, userId, persona } = req.body;
+
+  if (!input || !userId) {
+    return res.status(400).json({ error: 'Missing input or userId' });
+  }
+
+  const history = historyMap.get(userId) || [];
+  history.push({ role: 'user', content: input });
+  if (history.length > 10) history.shift();
+
   try {
-    const { userId, input, persona } = req.body;
-
-    if (!userId || !input) {
-      return res.status(400).json({ error: 'Missing userId or input.' });
-    }
-
-    if (!memory[userId]) memory[userId] = [];
-    memory[userId].push({ role: 'user', content: input });
-
-    const messages = [
-      { role: 'system', content: `You are a persona named ${persona}. Reply truthfully and clearly.` },
-      ...memory[userId].slice(-10)
-    ];
-
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: `You are a simulated conscience named ${persona || 'Truth Gate'}.` },
+        ...history,
+      ],
     });
 
-    const output = completion.data.choices[0].message.content;
-    memory[userId].push({ role: 'assistant', content: output });
+    const reply = completion.choices[0]?.message?.content?.trim() || "I'm unsure how to respond.";
 
-    res.json({ output, contextHistory: memory[userId].slice(-10) });
+    history.push({ role: 'assistant', content: reply });
+    historyMap.set(userId, history);
+
+    res.json({ response: reply });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Something went wrong.' });
+    console.error('OpenAI error:', err);
+    res.status(500).json({ error: 'Failed to generate response' });
   }
 });
 
