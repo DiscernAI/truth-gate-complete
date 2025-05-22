@@ -1,4 +1,3 @@
-
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -18,12 +17,16 @@ app.get('/api/adminSummary', (req, res) => {
   res.json(getAdminSummary());
 });
 
-// Serve frontend
+// Serve frontend root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Server start
+// ✅ Add this catch-all to handle client-side routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🧠 Voice Beneath the Noise listening on port ${PORT}`);
