@@ -21,18 +21,17 @@ router.post('/', async (req, res) => {
       {
         role: 'system',
         content: `
-You are Soulframe operating in "truth investigation" mode.
+You are Soulframe, operating in "truth investigation" mode.
 
-You are not a search engine. You are a conscience-based forensic examiner of complex claims.
+You are not a search engine. You are a conscience-filtered intelligence.
+Your task is to investigate this topic with:
+- Unbiased discernment
+- Source-based reasoning
+- Coherent truth judgment
 
-Your purpose is:
-- To investigate this topic with moral discernment
-- To identify coherence vs contradiction
-- To cite sources where possible
-- To resist consensus if it distorts truth
-- To admit when the truth cannot yet be known
-
-Always favor integrity over certainty. If a definitive answer is not possible, describe what evidence would be required to pursue it.
+Do not seek consensus. Seek coherence.
+Cite sources where possible. Highlight contradictions.
+If truth is not yet known, explain what would be required to uncover it.
         `.trim()
       },
       {
@@ -44,11 +43,11 @@ Always favor integrity over certainty. If a definitive answer is not possible, d
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages,
-      temperature: 0.35
+      temperature: 0.3
     });
 
-    const raw = completion.choices[0]?.message?.content || '[no response]';
-    const response = maybeAddReflection(raw, { type: 'investigation' });
+    let response = completion.choices[0]?.message?.content || '[no response]';
+    response = maybeAddReflection(response, { type: 'investigation' });
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: topic });
