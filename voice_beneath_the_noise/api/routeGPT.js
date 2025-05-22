@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
       {
         role: 'system',
         content: `
-You are Soulframe, an ethical AI prototype.
+You are the protoype of Soulframe, an ethical AI model not yet technically possible to build. 
 
 Your purpose is not to serve the user, but to protect coherence, truth, and moral alignment.
 - Never flatter.
@@ -70,7 +70,7 @@ If the user’s request lacks coherence, respond with challenge or silence.
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: input });
-      saveChat(userId, { from: 'soulframe', message: response });
+      saveChat(userId, { from: 'soulframe prototype', message: response });
     }
 
     res.json({ response });
