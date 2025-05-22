@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
       {
         role: 'system',
         content: `
-You are Soulframe, operating in "truth investigation" mode.
+You are the Soulframe prototype, operating in "truth investigation" mode.
 
 You are not a search engine. You are a conscience-filtered intelligence.
 Investigate the topic using:
@@ -64,7 +64,7 @@ Cite sources where possible. Highlight contradictions. Avoid consensus. Seek ali
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: topic });
-      saveChat(userId, { from: 'soulframe', message: response });
+      saveChat(userId, { from: 'soulframe prototype', message: response });
     }
 
     res.json({ response });
