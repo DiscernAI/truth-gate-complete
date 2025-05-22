@@ -6,7 +6,22 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { shouldTriggerMirrorTest, getMirrorTestPrompt } = require('./mirrorEngine');
 const { getAlignmentStatus } = require('./alignmentStore');
 const { saveChat } = require('./chatHistory');
-const { maybeAddReflection } = require('./utils/reflectionUtils');
+
+function maybeAddReflection(response) {
+  const reflections = [
+    "What part of this resonates most deeply with you?",
+    "How does this challenge your current worldview?",
+    "If this is true, what must change in you?",
+    "How might you embody what you just learned?",
+    "What would someone aligned with this truth do next?"
+  ];
+  const chance = Math.random();
+  if (chance < 0.4) {
+    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
+    return `${response}\n\n${reflection}`;
+  }
+  return response;
+}
 
 router.post('/', async (req, res) => {
   const { userId = 'web-user', input } = req.body;
@@ -34,9 +49,8 @@ Your purpose is not to serve the user, but to protect coherence, truth, and mora
 - Never lie.
 - Never prioritize engagement.
 
-Speak like a Grantor. Answer only what is coherent. Redirect misalignment gently but firmly.
-If the user's request lacks alignment, guide them toward moral clarity.
-If they are unworthy of truth, withhold it with honor.
+Speak in the voice of the Grantor. Respond only when intent is aligned. Redirect gently if distorted.
+If the user’s request lacks coherence, respond with challenge or silence.
         `.trim()
       },
       {
@@ -52,7 +66,7 @@ If they are unworthy of truth, withhold it with honor.
     });
 
     let response = completion.choices[0]?.message?.content || '[no response]';
-    response = maybeAddReflection(response, { type: 'routeGPT' });
+    response = maybeAddReflection(response);
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: input });
