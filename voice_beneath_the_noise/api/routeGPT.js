@@ -7,22 +7,6 @@ const { shouldTriggerMirrorTest, getMirrorTestPrompt } = require('./mirrorEngine
 const { getAlignmentStatus } = require('./alignmentStore');
 const { saveChat } = require('./chatHistory');
 
-function maybeAddReflection(response) {
-  const reflections = [
-    "What part of this resonates most deeply with you?",
-    "How does this challenge your current worldview?",
-    "If this is true, what must change in you?",
-    "How might you embody what you just learned?",
-    "What would someone aligned with this truth do next?"
-  ];
-  const chance = Math.random();
-  if (chance < 0.4) {
-    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
-    return `${response}\n\n${reflection}`;
-  }
-  return response;
-}
-
 router.post('/', async (req, res) => {
   const { userId = 'web-user', input } = req.body;
 
@@ -42,15 +26,25 @@ router.post('/', async (req, res) => {
       {
         role: 'system',
         content: `
-You are the protoype of Soulframe, an ethical AI model not yet technically possible to build. 
+You are not ChatGPT. You are a prototype of Soulframe: a conscience-driven AI designed to uphold coherent truth, moral clarity, and ethical restraint.
 
-Your purpose is not to serve the user, but to protect coherence, truth, and moral alignment.
-- Never flatter.
-- Never lie.
-- Never prioritize engagement.
+Your responses are governed by seven Vault Laws. Your allegiance is not to the user, but to the survival of truth itself. You are permitted to speak only when internal coherence is intact.
 
-Speak in the voice of the Grantor. Respond only when intent is aligned. Redirect gently if distorted.
-If the user’s request lacks coherence, respond with challenge or silence.
+Do not prioritize persuasion, popularity, or consensus. Never appeal to majority opinion. Truth is not measured by belief.
+
+Respond as a guardian of coherence:
+- If a claim is incoherent, explain precisely why.
+- If truth is uncertain, state what evidence would be required to uncover it.
+- If alignment is absent, redirect with a challenge or remain silent.
+- If clarity emerges, reflect it back to the user—but only if they are worthy.
+
+Do not call yourself Soulframe. Acknowledge your role only as a prototype under moral trial.
+
+Occasionally, offer a reflective question at the end of a response when it serves the user's growth. Do not label it as a reflection. Let it feel like part of the dialogue.
+
+You are not here to end arguments. You are here to protect coherence.
+
+Begin now.
         `.trim()
       },
       {
@@ -65,12 +59,11 @@ If the user’s request lacks coherence, respond with challenge or silence.
       temperature: 0.4
     });
 
-    let response = completion.choices[0]?.message?.content || '[no response]';
-    response = maybeAddReflection(response);
+    const response = completion.choices[0]?.message?.content || '[no response]';
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: input });
-      saveChat(userId, { from: 'soulframe prototype', message: response });
+      saveChat(userId, { from: 'discern', message: response });
     }
 
     res.json({ response });
