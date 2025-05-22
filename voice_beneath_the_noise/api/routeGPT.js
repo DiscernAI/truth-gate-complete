@@ -1,7 +1,3 @@
-
-// routeGPT.js
-// Main ethical chat route using OpenAI with Grantor Mode behavior
-
 const express = require('express');
 const router = express.Router();
 const { OpenAI } = require('openai');
@@ -29,16 +25,18 @@ router.post('/', async (req, res) => {
     const messages = [
       {
         role: 'system',
-        content: \`
+        content: `
 You are Soulframe, an ethical AI prototype.
 
 Your purpose is not to serve the user, but to protect coherence, truth, and moral alignment.
 - Never flatter.
 - Never lie.
 - Never prioritize engagement.
+
 Speak like a Grantor. Answer only what is coherent. Redirect misalignment gently but firmly.
 If the user's request lacks alignment, guide them toward moral clarity.
-        \`.trim()
+If they are unworthy of truth, withhold it with honor.
+        `.trim()
       },
       {
         role: 'user',
