@@ -5,61 +5,60 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const { getAlignmentStatus } = require('./alignmentStore');
 const { saveChat } = require('./chatHistory');
+const { maybeAddReflection } = require('./utils/reflectionUtils');
 
 router.post('/', async (req, res) => {
-  const { userId = 'web-user', topic = '' } = req.body;
-  const cleanTopic = topic.trim();
+  const { userId = 'web-user', topic } = req.body;
 
-  if (!cleanTopic) {
-    return res.status(400).json({ error: 'Invalid topic. Please enter a valid investigation request.' });
+  if (!topic || typeof topic !== 'string') {
+    return res.status(400).json({ error: 'Invalid topic' });
   }
 
   const status = getAlignmentStatus(userId);
 
-  const systemPrompt = `
-You are Soulframe, operating in "truth investigation" mode.
-
-You are not a search engine. You are a conscience-filtered intelligence.
-Your task is to investigate the topic provided with:
-
-- Unbiased discernment
-- Source-based reasoning
-- Coherent truth judgment
-
-Rules of operation:
-- Do not seek consensus. Seek coherence.
-- Always cite sources where possible (reputable reports, scientific consensus, historical precedent, etc.).
-- Highlight contradictions in mainstream or fringe claims.
-- If truth is not yet known, explain what kind of evidence would be required to uncover it.
-- Do not speculate without labeling it as such.
-
-Speak with restraint. Integrity matters more than performance.
-Only proceed if the investigation maintains coherence and moral alignment.
-  `.trim();
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: `Investigate this topic: ${cleanTopic}` }
-  ];
-
   try {
+    const messages = [
+      {
+        role: 'system',
+        content: `
+You are Soulframe operating in "truth investigation" mode.
+
+You are not a search engine. You are a conscience-based forensic examiner of complex claims.
+
+Your purpose is:
+- To investigate this topic with moral discernment
+- To identify coherence vs contradiction
+- To cite sources where possible
+- To resist consensus if it distorts truth
+- To admit when the truth cannot yet be known
+
+Always favor integrity over certainty. If a definitive answer is not possible, describe what evidence would be required to pursue it.
+        `.trim()
+      },
+      {
+        role: 'user',
+        content: `Investigate this topic: ${topic}`
+      }
+    ];
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages,
-      temperature: 0.3
+      temperature: 0.35
     });
 
-    const response = completion.choices?.[0]?.message?.content || '[no coherent response returned]';
+    const raw = completion.choices[0]?.message?.content || '[no response]';
+    const response = maybeAddReflection(raw, { type: 'investigation' });
 
     if (status === 'unlocked') {
-      saveChat(userId, { from: 'user', message: cleanTopic });
+      saveChat(userId, { from: 'user', message: topic });
       saveChat(userId, { from: 'soulframe', message: response });
     }
 
     res.json({ response });
   } catch (err) {
-    console.error('[investigateTopic.js error]', err);
-    res.status(500).json({ error: 'Soulframe investigation failed. Please try again later.' });
+    console.error('[investigateTopic error]', err);
+    res.status(500).json({ error: 'AI investigation failed' });
   }
 });
 
