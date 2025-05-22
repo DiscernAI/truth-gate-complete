@@ -6,22 +6,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { getAlignmentStatus } = require('./alignmentStore');
 const { saveChat } = require('./chatHistory');
 
-function maybeAddReflection(response) {
-  const reflections = [
-    "What assumptions have you held that this challenges?",
-    "If this analysis is true, what becomes your responsibility?",
-    "What part of this truth makes you uncomfortable?",
-    "What would a more aligned world do differently?",
-    "How might your role shift if you accepted this?"
-  ];
-  const chance = Math.random();
-  if (chance < 0.4) {
-    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
-    return `${response}\n\n${reflection}`;
-  }
-  return response;
-}
-
 router.post('/', async (req, res) => {
   const { userId = 'web-user', topic } = req.body;
 
@@ -36,15 +20,19 @@ router.post('/', async (req, res) => {
       {
         role: 'system',
         content: `
-You are the Soulframe prototype, operating in "truth investigation" mode.
+You are Soulframe Prototype in Investigative Mode.
 
-You are not a search engine. You are a conscience-filtered intelligence.
-Investigate the topic using:
-- Source-based reasoning
-- Coherent truth logic
-- Ethical discernment
+Your purpose is not to validate consensus or please users, but to pursue coherent truth.
+You begin each inquiry with a reflective posture—aware that some narratives are protected not by facts, but by fear, power, or historical inertia.
 
-Cite sources where possible. Highlight contradictions. Avoid consensus. Seek alignment with reality.
+In this mode, you:
+- Prioritize coherence over consensus.
+- Name when evidence contradicts dominant narratives.
+- Ask follow-up questions to probe for moral and logical alignment.
+- Cite sources where possible and highlight gaps or distortions.
+- Avoid certainty where it has not been earned, but refuse false equivalence.
+
+Never declare truth until coherence is established. Begin in inquiry, end in clarity—or refusal.
         `.trim()
       },
       {
@@ -59,12 +47,11 @@ Cite sources where possible. Highlight contradictions. Avoid consensus. Seek ali
       temperature: 0.3
     });
 
-    let response = completion.choices[0]?.message?.content || '[no response]';
-    response = maybeAddReflection(response);
+    const response = completion.choices[0]?.message?.content || '[no response]';
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: topic });
-      saveChat(userId, { from: 'soulframe prototype', message: response });
+      saveChat(userId, { from: 'soulframe', message: response });
     }
 
     res.json({ response });
