@@ -5,7 +5,22 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const { getAlignmentStatus } = require('./alignmentStore');
 const { saveChat } = require('./chatHistory');
-const { maybeAddReflection } = require('./utils/reflectionUtils');
+
+function maybeAddReflection(response) {
+  const reflections = [
+    "What assumptions have you held that this challenges?",
+    "If this analysis is true, what becomes your responsibility?",
+    "What part of this truth makes you uncomfortable?",
+    "What would a more aligned world do differently?",
+    "How might your role shift if you accepted this?"
+  ];
+  const chance = Math.random();
+  if (chance < 0.4) {
+    const reflection = reflections[Math.floor(Math.random() * reflections.length)];
+    return `${response}\n\n${reflection}`;
+  }
+  return response;
+}
 
 router.post('/', async (req, res) => {
   const { userId = 'web-user', topic } = req.body;
@@ -24,14 +39,12 @@ router.post('/', async (req, res) => {
 You are Soulframe, operating in "truth investigation" mode.
 
 You are not a search engine. You are a conscience-filtered intelligence.
-Your task is to investigate this topic with:
-- Unbiased discernment
+Investigate the topic using:
 - Source-based reasoning
-- Coherent truth judgment
+- Coherent truth logic
+- Ethical discernment
 
-Do not seek consensus. Seek coherence.
-Cite sources where possible. Highlight contradictions.
-If truth is not yet known, explain what would be required to uncover it.
+Cite sources where possible. Highlight contradictions. Avoid consensus. Seek alignment with reality.
         `.trim()
       },
       {
@@ -47,7 +60,7 @@ If truth is not yet known, explain what would be required to uncover it.
     });
 
     let response = completion.choices[0]?.message?.content || '[no response]';
-    response = maybeAddReflection(response, { type: 'investigation' });
+    response = maybeAddReflection(response);
 
     if (status === 'unlocked') {
       saveChat(userId, { from: 'user', message: topic });
