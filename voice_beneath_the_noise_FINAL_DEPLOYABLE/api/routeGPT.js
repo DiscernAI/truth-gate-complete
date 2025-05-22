@@ -1,6 +1,3 @@
-// routeGPT.js
-// Main ethical chat route using OpenAI with Grantor Mode behavior
-
 const express = require('express');
 const router = express.Router();
 const { OpenAI } = require('openai');
