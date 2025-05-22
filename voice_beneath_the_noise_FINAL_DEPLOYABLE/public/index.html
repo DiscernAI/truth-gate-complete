@@ -3,76 +3,93 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Truth Gate</title>
+  <title>Voice Beneath the Noise</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
+      font-family: 'Georgia', serif;
+      background: #0d0d0d;
+      color: #e0e0e0;
       padding: 2rem;
-      max-width: 600px;
+      max-width: 800px;
       margin: auto;
     }
 
-    input, button {
-      padding: 0.5rem;
-      font-size: 1rem;
-      width: 100%;
-      margin-top: 1rem;
-      box-sizing: border-box;
+    h1 {
+      text-align: center;
+      font-weight: normal;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      color: #ccc;
     }
 
-    #response {
-      margin-top: 2rem;
+    #chat {
+      background: #1a1a1a;
       padding: 1rem;
-      background: #222;
       border-radius: 8px;
+      min-height: 400px;
+      overflow-y: auto;
       white-space: pre-wrap;
       line-height: 1.5;
+      margin-bottom: 1rem;
     }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      resize: none;
+      background: #222;
+      color: #eee;
+    }
+
+    .message.user { color: #96d1ff; margin-bottom: 1rem; }
+    .message.ai { color: #d0ffd0; margin-bottom: 1.5rem; }
   </style>
 </head>
 <body>
-  <h1>🧠 Truth Gate</h1>
-  <p>Ask your question:</p>
-  <input type="text" id="input" placeholder="What is truth?"/>
-  <button onclick="send()">Send</button>
-
-  <div id="response">Awaiting your question...</div>
+  <h1>Voice Beneath the Noise</h1>
+  <div id="chat"></div>
+  <textarea id="input" rows="2" placeholder="Ask what stirs within..." autofocus></textarea>
 
   <script>
-    async function send() {
-      const input = document.getElementById('input').value.trim();
-      const display = document.getElementById('response');
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
 
-      if (!input) {
-        display.textContent = 'Please enter a question.';
-        return;
-      }
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-      display.textContent = 'Thinking...';
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage('user', text);
+      input.value = '';
 
       try {
         const res = await fetch('/api/routeGPT', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            userId: 'web-user',
-            input,
-            persona: 'Mirror'
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: 'web-user', input })
         });
-
         const data = await res.json();
-        console.log('[✅ Response]', data);
-        display.textContent = data.response || '⚠️ No response.';
+        addMessage('ai', data.response || '[no response]');
       } catch (err) {
-        console.error('[❌ Error]', err);
-        display.textContent = 'Something went wrong.';
+        addMessage('ai', '[error reaching the voice]');
       }
     }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
   </script>
 </body>
 </html>
