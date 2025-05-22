@@ -1,23 +1,27 @@
-const prompts = [
-  "What in this answer feels true to you, and what might you still be resisting?",
-  "If you fully accepted this response, what would you have to change about your beliefs or behavior?",
-  "What emotions arose as you read that? Are they protective, defensive, open, curious?",
-  "Can you recall a moment in your life where this pattern revealed itself?",
-  "What would it cost you to live as if this were true?",
-  "What story are you telling yourself that this answer disrupts?",
-  "What part of you doesn't want this to be the answer, and why?",
-  "How do your desires shape what you hope the answer will be?",
-  "What part of this answer do you want to reject, and what might that reveal?",
-  "If a child asked you the same question, would you give the same answer?"
-];
+// utils/reflectionUtils.js
 
-function maybeAddReflection(text) {
-  const chance = Math.random();
-  if (chance < 0.4) {
-    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-    return `${text.trim()}\n\n🪞 *Reflection Prompt:* ${randomPrompt}`;
-  }
-  return text.trim();
+function maybeAddReflection(response, { type }) {
+  const shouldReflect = Math.random() < 0.35; // ~35% chance
+  if (!shouldReflect) return response;
+
+  const reflections = {
+    routeGPT: [
+      "What part of this answer stirred something in you?",
+      "Do you agree with what was revealed? Why or why not?",
+      "If you had to defend this truth, where would you begin?",
+      "What is your responsibility now that you know this?"
+    ],
+    investigation: [
+      "What assumptions have you held about this topic—and are they still valid?",
+      "What sources do you instinctively trust or distrust—and why?",
+      "Does this contradiction reveal something deeper?",
+      "Where might your own bias be obscuring clarity?"
+    ]
+  };
+
+  const prompts = reflections[type] || [];
+  const chosen = prompts[Math.floor(Math.random() * prompts.length)];
+  return `${response.trim()}\n\n_Reflection: ${chosen}_`;
 }
 
 module.exports = { maybeAddReflection };
