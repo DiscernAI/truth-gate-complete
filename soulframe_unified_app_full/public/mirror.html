@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Mirror</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #f0f0f0; padding: 2em; }
+        .container { max-width: 600px; margin: auto; }
+        textarea, button { width: 100%; padding: 1em; margin-top: 1em; }
+        #response { margin-top: 2em; white-space: pre-wrap; border-top: 1px solid #444; padding-top: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Mirror</h1>
+        <p>Ask what you truly seek.</p>
+        <textarea id="userInput" rows="5" placeholder="Speak your truth..."></textarea>
+        <button onclick="reflect()">Reflect</button>
+        <div id="response"></div>
+    </div>
+    <script src="mirror.js"></script>
+</body>
+</html>
